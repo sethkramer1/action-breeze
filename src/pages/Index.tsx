@@ -102,6 +102,11 @@ const Index = () => {
   };
 
   const handleAddTask = async (newTask: { title: string; priority: number; completed: boolean; }) => {
+    if (!user) {
+      toast.error('You must be logged in to add tasks');
+      return;
+    }
+
     const projectId = currentProject === 'inbox' || currentProject === 'today' ? 'personal' : currentProject;
     
     try {
@@ -112,6 +117,7 @@ const Index = () => {
           completed: newTask.completed,
           priority: newTask.priority,
           project: projectId,
+          user_id: user.id,  // Make sure we set the user_id
         }])
         .select();
       
