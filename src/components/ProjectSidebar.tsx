@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Inbox, 
@@ -102,7 +101,7 @@ const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
                 >
                   <div 
                     className="w-2 h-2 rounded-full mr-2"
-                    style={{ backgroundColor: project.color || '#9b87f5' }}
+                    style={{ backgroundColor: project.color || '#e44332' }}
                   ></div>
                   {project.name}
                 </Button>

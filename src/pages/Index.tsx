@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,7 +25,7 @@ const Index = () => {
   const [newProjectName, setNewProjectName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   
-  const projectColors = ['#9b87f5', '#e44332', '#ff9a14', '#4073ff', '#25b84c'];
+  const projectColors = ['#e44332', '#ff9a14', '#4073ff', '#25b84c'];
 
   useEffect(() => {
     if (user) {
