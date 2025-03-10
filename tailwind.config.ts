@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -63,8 +64,8 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				todo: {
-					'purple': '#e44332',
-					'purple-dark': '#c93d2d',
+					'purple': '#0EA5E9',
+					'purple-dark': '#0284C7',
 					'red': '#e44332',
 					'orange': '#ff9a14',
 					'blue': '#4073ff',

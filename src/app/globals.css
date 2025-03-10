@@ -1,3 +1,4 @@
+
 :root {
   --background: 0 0% 100%;
   --foreground: 0 0% 3.9%;
@@ -8,8 +9,8 @@
   --popover: 0 0% 100%;
   --popover-foreground: 0 0% 3.9%;
 
-  /* Change primary colors from purple to red */
-  --primary: 0 72% 51%; /* This is a vibrant red */
+  /* Change primary colors from red to blue */
+  --primary: 199 84% 48%; /* This is a vibrant blue (#0EA5E9) */
   --primary-foreground: 0 85.7% 97.3%;
 }
 
@@ -23,7 +24,7 @@
   --popover: 0 0% 3.9%;
   --popover-foreground: 0 0% 98%;
 
-  /* Change primary colors from purple to red in dark mode */
-  --primary: 0 72% 51%; /* This is a vibrant red */
+  /* Change primary colors from red to blue in dark mode */
+  --primary: 199 84% 48%; /* This is a vibrant blue (#0EA5E9) */
   --primary-foreground: 0 85.7% 97.3%;
 } 
