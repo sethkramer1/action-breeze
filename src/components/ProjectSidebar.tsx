@@ -1,16 +1,11 @@
-import React from 'react';
-import { 
-  Inbox, 
-  Calendar, 
-  List, 
-  CheckCircle, 
-  Plus,
-  Home
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { Inbox, Calendar, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from '@/lib/utils';
+import { useMobile } from "@/hooks/use-mobile";
 
-export interface Project {
+interface Project {
   id: string;
   name: string;
   color?: string;
@@ -20,136 +15,170 @@ interface ProjectSidebarProps {
   projects: Project[];
   currentProject: string;
   onSelectProject: (projectId: string) => void;
-  currentFilter: 'all' | 'active' | 'completed';
-  onChangeFilter: (filter: 'all' | 'active' | 'completed') => void;
-  onAddProject: () => void;
+  onAddProject: (name: string) => void;
 }
 
 const ProjectSidebar: React.FC<ProjectSidebarProps> = ({
   projects,
   currentProject,
   onSelectProject,
-  currentFilter,
-  onChangeFilter,
   onAddProject
 }) => {
+  const [newProjectName, setNewProjectName] = useState('');
+  const [isAddingProject, setIsAddingProject] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const isMobile = useMobile();
+
+  const handleAddProject = () => {
+    if (newProjectName.trim()) {
+      onAddProject(newProjectName);
+      setNewProjectName('');
+      setIsAddingProject(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAddProject();
+    } else if (e.key === 'Escape') {
+      setIsAddingProject(false);
+      setNewProjectName('');
+    }
+  };
+
+  const handleProjectSelect = (projectId: string) => {
+    onSelectProject(projectId);
+    if (isMobile) {
+      setIsCollapsed(true);
+    }
+  };
+
   return (
-    <div className="w-64 bg-gray-50 border-r border-gray-200 h-screen flex flex-col">
-      <div className="p-4">
-        <h1 className="text-xl font-bold text-todo-purple flex items-center">
-          <Home className="mr-2" size={20} />
-          TodoBreeze
-        </h1>
-      </div>
-      
-      <div className="px-2 py-4 flex-1">
-        <div className="mb-6">
-          <h2 className="text-xs uppercase font-semibold text-gray-500 mb-2 px-3">Views</h2>
-          <ul>
-            <li>
-              <Button
-                variant="ghost"
-                onClick={() => onSelectProject('inbox')}
-                className={cn(
-                  "w-full justify-start font-normal mb-1 text-gray-700 text-sm hover:text-todo-purple",
-                  currentProject === 'inbox' && "bg-gray-200 text-todo-purple font-medium"
-                )}
-              >
-                <Inbox className="mr-2" size={18} />
-                Inbox
-              </Button>
-            </li>
-            <li>
-              <Button
-                variant="ghost"
-                onClick={() => onSelectProject('today')}
-                className={cn(
-                  "w-full justify-start font-normal mb-1 text-gray-700 text-sm hover:text-todo-purple",
-                  currentProject === 'today' && "bg-gray-200 text-todo-purple font-medium"
-                )}
-              >
-                <Calendar className="mr-2" size={18} />
-                Today
-              </Button>
-            </li>
-          </ul>
+    <div className={cn(
+      "bg-white border-r border-gray-200 flex flex-col",
+      isMobile ? "h-auto" : "h-full"
+    )}>
+      {isMobile && (
+        <div 
+          className="p-3 border-b border-gray-200 flex items-center justify-between cursor-pointer"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          <h2 className="font-medium text-gray-700">
+            {currentProject === 'inbox' 
+              ? 'Inbox' 
+              : currentProject === 'today' 
+              ? 'Today' 
+              : projects.find(p => p.id === currentProject)?.name || 'All Tasks'}
+          </h2>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          </Button>
         </div>
-        
-        <div>
-          <div className="flex items-center justify-between mb-2 px-3">
-            <h2 className="text-xs uppercase font-semibold text-gray-500">Projects</h2>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={onAddProject}
-              className="h-6 w-6 p-0 text-gray-500 hover:text-todo-purple hover:bg-gray-200"
+      )}
+      
+      <div className={cn(
+        "p-4 flex-1 flex flex-col overflow-auto",
+        isMobile && isCollapsed ? "hidden" : "block"
+      )}>
+        <div className="mb-6">
+          <h2 className="text-sm font-medium mb-2 text-gray-500 uppercase tracking-wider">Views</h2>
+          <div className="space-y-1">
+            <button
+              className={cn(
+                "project-button",
+                currentProject === 'inbox' && "active"
+              )}
+              onClick={() => handleProjectSelect('inbox')}
             >
-              <Plus size={16} />
+              <Inbox size={16} className="icon" />
+              <span>Inbox</span>
+            </button>
+            <button
+              className={cn(
+                "project-button",
+                currentProject === 'today' && "active"
+              )}
+              onClick={() => handleProjectSelect('today')}
+            >
+              <Calendar size={16} className="icon" />
+              <span>Today</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Projects</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => setIsAddingProject(true)}
+            >
+              <Plus size={14} />
             </Button>
           </div>
           
-          <ul>
-            {projects.map((project) => (
-              <li key={project.id}>
+          {isAddingProject ? (
+            <div className="mb-3">
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Project name"
+                  autoFocus
+                  className="h-9 text-sm"
+                />
                 <Button
-                  variant="ghost"
-                  onClick={() => onSelectProject(project.id)}
+                  size="sm"
+                  onClick={handleAddProject}
+                  disabled={!newProjectName.trim()}
+                  className="bg-todo-purple hover:bg-todo-purple-dark text-white"
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+          ) : null}
+          
+          <div className="space-y-1">
+            {projects
+              .filter(p => p.id !== 'inbox' && p.id !== 'today')
+              .map((project) => (
+                <button
+                  key={project.id}
                   className={cn(
-                    "w-full justify-start font-normal mb-1 text-gray-700 text-sm hover:text-todo-purple",
-                    currentProject === project.id && "bg-gray-200 text-todo-purple font-medium"
+                    "project-button",
+                    currentProject === project.id && "active"
                   )}
+                  onClick={() => handleProjectSelect(project.id)}
                 >
                   <div 
-                    className="w-2 h-2 rounded-full mr-2"
-                    style={{ backgroundColor: project.color || '#e44332' }}
-                  ></div>
-                  {project.name}
-                </Button>
-              </li>
-            ))}
-          </ul>
+                    className="project-dot"
+                    style={{ backgroundColor: project.color || '#6366f1' }}
+                  />
+                  <span>{project.name}</span>
+                </button>
+              ))}
+          </div>
         </div>
-      </div>
-      
-      <div className="p-3 border-t border-gray-200">
-        <div className="flex space-x-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onChangeFilter('all')}
-            className={cn(
-              "flex-1 text-gray-700 text-xs",
-              currentFilter === 'all' && "bg-gray-200"
-            )}
-          >
-            <List size={14} className="mr-1" />
-            All
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onChangeFilter('active')}
-            className={cn(
-              "flex-1 text-gray-700 text-xs",
-              currentFilter === 'active' && "bg-gray-200"
-            )}
-          >
-            <Calendar size={14} className="mr-1" />
-            Active
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onChangeFilter('completed')}
-            className={cn(
-              "flex-1 text-gray-700 text-xs",
-              currentFilter === 'completed' && "bg-gray-200"
-            )}
-          >
-            <CheckCircle size={14} className="mr-1" />
-            Done
-          </Button>
-        </div>
+
+        {!isMobile && (
+          <div className="mt-auto pt-4">
+            <div className="flex space-x-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 text-xs"
+                onClick={() => handleProjectSelect('inbox')}
+              >
+                <Inbox size={14} className="mr-1" />
+                All Tasks
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

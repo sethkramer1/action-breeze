@@ -4,12 +4,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import TaskInput from '@/components/TaskInput';
 import TaskList, { TaskItem } from '@/components/TaskList';
-import ProjectSidebar, { Project } from '@/components/ProjectSidebar';
+import ProjectSidebar from '@/components/ProjectSidebar';
 import Header from '@/components/Header';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+
+interface Project {
+  id: string;
+  name: string;
+  color?: string;
+}
 
 const Index = () => {
   const { user } = useAuth();
@@ -106,7 +112,15 @@ const Index = () => {
       return;
     }
 
-    const projectId = currentProject === 'inbox' || currentProject === 'today' ? 'personal' : currentProject;
+    // For regular projects, use the project ID
+    // For 'inbox', don't set a specific project ID
+    // For 'today', set the due date to today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const projectId = currentProject !== 'inbox' && currentProject !== 'today' 
+      ? currentProject 
+      : null;
     
     try {
       const { data, error } = await supabase
@@ -116,7 +130,8 @@ const Index = () => {
           completed: newTask.completed,
           priority: newTask.priority,
           project: projectId,
-          user_id: user.id,  // Make sure we set the user_id
+          user_id: user.id,
+          due_date: currentProject === 'today' ? today : null
         }])
         .select();
       
@@ -127,7 +142,8 @@ const Index = () => {
         title: data[0].title,
         completed: data[0].completed,
         priority: data[0].priority,
-        project: data[0].project
+        project: data[0].project,
+        dueDate: currentProject === 'today' ? today : undefined
       };
       
       setTasks([...tasks, newTaskItem]);
@@ -205,7 +221,8 @@ const Index = () => {
           .from('projects')
           .insert([{
             name: newProjectName,
-            color: randomColor
+            color: randomColor,
+            user_id: user?.id
           }])
           .select();
         
@@ -220,7 +237,7 @@ const Index = () => {
         setProjects([...projects, newProject]);
         setNewProjectName('');
         setIsAddProjectOpen(false);
-        toast.success('Project added');
+        toast.success('Project added successfully');
       } catch (error: any) {
         toast.error(`Error adding project: ${error.message}`);
       }
@@ -228,54 +245,105 @@ const Index = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="app-container">
       <ProjectSidebar 
         projects={projects}
         currentProject={currentProject}
         onSelectProject={setCurrentProject}
-        currentFilter={filter}
-        onChangeFilter={setFilter}
-        onAddProject={() => setIsAddProjectOpen(true)}
+        onAddProject={(name) => {
+          setNewProjectName(name);
+          handleAddProject();
+        }}
       />
       
-      <div className="flex-1 p-8 overflow-auto">
-        <Header 
-          currentProject={currentProject} 
-          projectName={getProjectName(currentProject)}
-          taskCount={getTaskCount(currentProject)}
-        />
-        
-        <TaskInput 
-          onAddTask={handleAddTask}
-          currentProject={currentProject}
-        />
-        
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-current border-t-transparent text-todo-purple"></div>
+      <div className="main-content">
+        <div className="header">
+          <div className="flex items-center">
+            <h1 className="text-2xl font-semibold text-gray-800">
+              {getProjectName(currentProject)}
+            </h1>
+            <div className="ml-3 px-2 py-1 bg-gray-100 rounded-lg">
+              <span className="text-sm text-gray-600 font-medium">
+                {getTaskCount(currentProject)} tasks
+              </span>
+            </div>
           </div>
-        ) : (
-          <TaskList 
-            tasks={tasks}
-            currentProject={currentProject}
-            filter={filter}
-            onToggleComplete={handleToggleComplete}
-            onDeleteTask={handleDeleteTask}
-            onSetDueDate={handleSetDueDate}
-          />
-        )}
+          <div className="flex items-center space-x-1">
+            <div className="bg-white border border-gray-200 rounded-lg p-1 flex shadow-sm">
+              <button 
+                onClick={() => setFilter('all')}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  filter === 'all' 
+                    ? 'bg-todo-purple text-white' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                All
+              </button>
+              <button 
+                onClick={() => setFilter('active')}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  filter === 'active' 
+                    ? 'bg-todo-purple text-white' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                Active
+              </button>
+              <button 
+                onClick={() => setFilter('completed')}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  filter === 'completed' 
+                    ? 'bg-todo-purple text-white' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                Completed
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="content-area">
+          {isLoading ? (
+            <div className="flex justify-center py-10">
+              <div className="animate-pulse-subtle">
+                <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
+                <div className="h-10 w-full bg-gray-100 rounded mb-2"></div>
+                <div className="h-10 w-full bg-gray-100 rounded mb-2"></div>
+                <div className="h-10 w-full bg-gray-100 rounded"></div>
+              </div>
+            </div>
+          ) : (
+            <TaskList 
+              tasks={tasks}
+              currentProject={currentProject}
+              filter={filter}
+              onToggleComplete={handleToggleComplete}
+              onDeleteTask={handleDeleteTask}
+              onSetDueDate={handleSetDueDate}
+            />
+          )}
+          
+          <div className="mt-4">
+            <TaskInput 
+              onAddTask={handleAddTask}
+              currentProject={currentProject}
+            />
+          </div>
+        </div>
       </div>
-
+      
       <Dialog open={isAddProjectOpen} onOpenChange={setIsAddProjectOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Add New Project</DialogTitle>
+            <DialogTitle>Create new project</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <Input
-              placeholder="Project name"
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
+              placeholder="Project name"
               className="w-full"
               onKeyDown={(e) => e.key === 'Enter' && handleAddProject()}
             />
@@ -284,8 +352,8 @@ const Index = () => {
             <Button variant="outline" onClick={() => setIsAddProjectOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddProject} className="bg-todo-purple hover:bg-todo-purple-dark">
-              Add Project
+            <Button onClick={handleAddProject}>
+              Create Project
             </Button>
           </DialogFooter>
         </DialogContent>
